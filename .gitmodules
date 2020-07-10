@@ -1,0 +1,3 @@
+[submodule "lib/PN532Extended"]
+	path = lib/PN532Extended
+	url = https://github.com/chemicstry/PN532Extended
