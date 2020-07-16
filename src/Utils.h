@@ -1,5 +1,4 @@
-#ifndef _UTILS_H_
-#define _UTILS_H_
+#pragma once
 
 #include "ByteBuffer.h"
 #include <string>
@@ -34,6 +33,33 @@ inline BinaryData HexStringToBinaryData(const std::string& str)
     return data;
 }
 
+inline void tone(int pin, int freq, int duration)
+{
+    int channel = 0;
+    int resolution = 8;
+
+    ledcSetup(channel, 2000, resolution);
+    ledcAttachPin(pin, channel);
+    ledcWriteTone(channel, freq);
+    ledcWrite(channel, 255);
+    delay(duration);
+    ledcWrite(channel, 0);
+}
+
+inline void beep(int duration)
+{
+    #if CONFIG_BUZZER_PWM
+        tone(CONFIG_BUZZER_PIN, 2000, duration);
+    #else
+        digitalWrite(CONFIG_BUZZER_PIN, HIGH);
+        delay(duration);
+        digitalWrite(CONFIG_BUZZER_PIN, LOW);
+    #endif
+}
+
+inline void beep_short() { beep(150); }
+inline void beep_long() { beep(800); }
+
 #if CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS
 inline void PrintTaskStats(void* parameter)
 {
@@ -59,6 +85,4 @@ inline void EnableTaskStats()
 {
     // Do nothing
 }
-#endif
-
 #endif

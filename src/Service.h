@@ -1,5 +1,4 @@
-#ifndef _SERVICE_H_
-#define _SERVICE_H_
+#pragma once
 
 #include <string>
 #include "JSONRPC/Node.h"
@@ -35,5 +34,3 @@ public:
     JSONRPC::WebsocketTransport transport;
     JSONRPC::Node* RPC;
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef _PN532INSTANCE_H_
-#define _PN532INSTANCE_H_
+#pragma once
 
 #include <PN532_HSU.h>
 #include <PN532Extended.h>
@@ -13,4 +12,4 @@ extern PN532_HSU PN532HSU;
 // Extended library which allows card extensions
 extern PN532Extended NFC;
 
-#endif
+void setupNFC();

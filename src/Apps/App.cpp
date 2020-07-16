@@ -1,14 +1,25 @@
-#include "network.h"
-#include "esp_log.h"
+#include "App.h"
+#include "Arduino.h"
 
-static const char* TAG = "NETWORK";
+#include "esp_log.h"
+static const char* TAG = "App";
+
+#if CONFIG_USE_MDNS
+#include <ESPmDNS.h>
+#endif
 
 #if !CONFIG_USE_ETH && !CONFIG_USE_WIFI
     #warning "No netwokr connection enabled. Both WiFi and Ethernet disabled."
 #endif
 
 #if CONFIG_USE_WIFI
+#include <WiFi.h>
+#include <WiFiMulti.h>
 WiFiMulti wifiMulti;
+#endif
+
+#if CONFIG_USE_ETH
+#include <ETH.h>
 #endif
 
 #if CONFIG_USE_ETH || CONFIG_USE_WIFI
@@ -49,7 +60,18 @@ void WiFiEvent(WiFiEvent_t event)
 }
 #endif
 
-void network_setup()
+App::App(): service("eacs-server")
+{
+}
+
+void App::Start()
+{
+    SetupNetwork();
+
+    //std::thread(std::bind(&App::NetworkThreadFn, this));
+}
+
+void App::SetupNetwork()
 {
     #if CONFIG_USE_ETH || CONFIG_USE_WIFI
         // Enable wifi event callbacks
@@ -67,9 +89,31 @@ void network_setup()
     #if CONFIG_USE_ETH
         ETH.begin();
     #endif
+
+    // Start mDNS
+    #if CONFIG_USE_MDNS
+        if (!MDNS.begin("eacs_esp32")) {
+            ESP_LOGE(TAG, "mDNS responder setup failed.");
+            ESP.restart();
+        }
+    #endif
+
+    #if CONFIG_SERVER_USE_MDNS
+        service.MDNSQuery();
+    #else
+        service.host = CONFIG_SERVER_HOST;
+        service.port = CONFIG_SERVER_PORT;
+    #endif
+
+    #if CONFIG_SERVER_SSL
+        service.fingerprint = CONFIG_SERVER_SSL_FINGERPRINT;
+        service.BeginTransportSSL();
+    #else
+        service.BeginTransport();
+    #endif 
 }
 
-bool network_loop()
+void App::UpdateNetwork()
 {
     #if CONFIG_USE_WIFI
         if (wifiMulti.run() != WL_CONNECTED) {
@@ -80,9 +124,25 @@ bool network_loop()
                 lastLog = millis();
             }
 
-            return false;
+            return;
         }
     #endif
 
-    return true;
+    try {
+        service.transport.update();
+    } catch(const JSONRPC::MethodNotFoundException& e) {
+        ESP_LOGE(TAG, "RPC method '%s' not found", e.method.c_str());
+    } catch(const JSONRPC::InvalidJSONRPCException& e) {
+        ESP_LOGE(TAG, "RPC received invalid json");
+    }
+}
+
+void App::NetworkThreadFn()
+{
+    while(1) {
+        UpdateNetwork();
+
+        // Yield to kernel to prevent triggering watchdog
+        delay(10);
+    }
 }
