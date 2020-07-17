@@ -68,7 +68,7 @@ void App::Start()
 {
     SetupNetwork();
 
-    //std::thread(std::bind(&App::NetworkThreadFn, this));
+    std::thread(std::bind(&App::NetworkThreadFn, this)).detach();
 }
 
 void App::SetupNetwork()

@@ -43,8 +43,8 @@ void DoorApp::Start()
     pinMode(BUZZER_PIN, OUTPUT);
     digitalWrite(BUZZER_PIN, LOW);
 
-    std::thread(std::bind(&DoorApp::RFIDThreadFn, this));
-    std::thread(std::bind(&DoorApp::LogicThreadFn, this));
+    std::thread(std::bind(&DoorApp::RFIDThreadFn, this)).detach();
+    std::thread(std::bind(&DoorApp::LogicThreadFn, this)).detach();
 }
 
 void DoorApp::RFIDThreadFn()
